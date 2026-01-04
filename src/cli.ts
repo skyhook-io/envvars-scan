@@ -2,9 +2,16 @@
 
 import { program } from 'commander';
 import chalk from 'chalk';
-import { existsSync, mkdirSync, writeFileSync, rmSync } from 'fs';
-import { join, resolve } from 'path';
+import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'fs';
+import { join, resolve, dirname } from 'path';
 import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+// Get version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+const version = packageJson.version;
 import { scan, checkSemgrepInstalled, uniqueEnvVarNames, groupByName, CONFIG_FILE_NAME, DEFAULT_EXCLUDE_PATTERNS } from './scanner.js';
 import { scanPropertyFiles, scanDockerfiles, scanDotEnvFiles, scanDockerComposeFiles } from './property-scanner.js';
 import { scanK8sManifests } from './k8s-scanner.js';
@@ -79,7 +86,7 @@ customPatterns:
 program
   .name('envvars-scan')
   .description('Scan codebases for environment variable usage')
-  .version('0.1.0')
+  .version(version)
   .argument('[path]', 'Path to scan', '.')
   .option('--all', 'Include all env vars (not just uppercase)')
   .option('--json', 'Output as JSON')
