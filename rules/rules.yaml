@@ -1,0 +1,620 @@
+rules:
+  # ===================
+  # Go patterns
+  # ===================
+  - id: go-os-getenv
+    patterns:
+      - pattern: os.Getenv("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-os-lookupenv
+    patterns:
+      - pattern: os.LookupEnv("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  # Go Viper config library
+  - id: go-viper-get
+    patterns:
+      - pattern: viper.Get("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-viper-getstring
+    patterns:
+      - pattern: viper.GetString("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-viper-getbool
+    patterns:
+      - pattern: viper.GetBool("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-viper-getint
+    patterns:
+      - pattern: viper.GetInt("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-viper-getint64
+    patterns:
+      - pattern: viper.GetInt64("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-viper-getduration
+    patterns:
+      - pattern: viper.GetDuration("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  - id: go-viper-getfloat64
+    patterns:
+      - pattern: viper.GetFloat64("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  # Go envconfig library
+  - id: go-envconfig-process
+    patterns:
+      - pattern: envconfig.Process("$VAR", ...)
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # JavaScript/TypeScript - Standard
+  # ===================
+  - id: js-process-env-dot
+    patterns:
+      - pattern: process.env.$VAR
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  - id: js-process-env-bracket
+    patterns:
+      - pattern: process.env["$VAR"]
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # JavaScript/TypeScript - NestJS ConfigService
+  # ===================
+  - id: js-nestjs-configservice-get
+    patterns:
+      - pattern: configService.get("$VAR")
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  - id: js-nestjs-configservice-get-generic
+    patterns:
+      - pattern: configService.get<$TYPE>("$VAR")
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  - id: js-nestjs-configservice-getorelse
+    patterns:
+      - pattern: configService.getOrThrow("$VAR")
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  - id: js-nestjs-this-configservice
+    patterns:
+      - pattern: this.configService.get("$VAR")
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  - id: js-nestjs-this-configservice-generic
+    patterns:
+      - pattern: this.configService.get<$TYPE>("$VAR")
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # JavaScript/TypeScript - dotenv / env helpers
+  # ===================
+  - id: js-dotenv-config
+    patterns:
+      - pattern: env("$VAR")
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  - id: js-dotenv-config-default
+    patterns:
+      - pattern: env("$VAR", ...)
+    languages: [javascript, typescript]
+    message: "$VAR"
+    severity: INFO
+
+  # envalid library
+  - id: js-envalid-str
+    patterns:
+      - pattern: str({ ... })
+    languages: [javascript, typescript]
+    message: "envalid_str"
+    severity: INFO
+
+  # ===================
+  # JavaScript/TypeScript - Next.js
+  # ===================
+  - id: js-nextjs-env
+    patterns:
+      - pattern: process.env.NEXT_PUBLIC_$VAR
+    languages: [javascript, typescript]
+    message: "NEXT_PUBLIC_$VAR"
+    severity: INFO
+
+  # ===================
+  # Python - Standard
+  # ===================
+  - id: python-os-getenv
+    patterns:
+      - pattern: os.getenv("$VAR")
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-os-getenv-single
+    patterns:
+      - pattern: os.getenv('$VAR')
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-os-getenv-default
+    patterns:
+      - pattern: os.getenv("$VAR", ...)
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-os-environ-get
+    patterns:
+      - pattern: os.environ.get("$VAR")
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-os-environ-get-single
+    patterns:
+      - pattern: os.environ.get('$VAR')
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-os-environ-bracket
+    patterns:
+      - pattern: os.environ["$VAR"]
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-os-environ-bracket-single
+    patterns:
+      - pattern: os.environ['$VAR']
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Python - Django
+  # ===================
+  - id: python-django-env
+    patterns:
+      - pattern: env("$VAR")
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-django-env-single
+    patterns:
+      - pattern: env('$VAR')
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-django-env-default
+    patterns:
+      - pattern: env("$VAR", default=...)
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-django-config
+    patterns:
+      - pattern: config("$VAR")
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-django-config-single
+    patterns:
+      - pattern: config('$VAR')
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-django-config-default
+    patterns:
+      - pattern: config("$VAR", default=...)
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Python - Pydantic Settings
+  # ===================
+  - id: python-pydantic-field-env
+    patterns:
+      - pattern: Field(..., env="$VAR")
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Python - Custom helpers
+  # ===================
+  - id: python-getenv-or-set
+    patterns:
+      - pattern: getenv_or_set("$VAR", ...)
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-getenv-or-set-single
+    patterns:
+      - pattern: getenv_or_set('$VAR', ...)
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Python - Flask
+  # ===================
+  - id: python-flask-config-get
+    patterns:
+      - pattern: app.config.get("$VAR")
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-flask-config-bracket
+    patterns:
+      - pattern: app.config["$VAR"]
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  - id: python-flask-current-config
+    patterns:
+      - pattern: current_app.config["$VAR"]
+    languages: [python]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Java - Standard
+  # ===================
+  - id: java-system-getenv
+    patterns:
+      - pattern: System.getenv("$VAR")
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-system-getproperty
+    patterns:
+      - pattern: System.getProperty("$VAR")
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Java - Spring
+  # ===================
+  - id: java-spring-value-annotation
+    patterns:
+      - pattern: '@Value("${$VAR}")'
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-spring-value-annotation-default
+    patterns:
+      - pattern: '@Value("${$VAR:...}")'
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-spring-environment-get
+    patterns:
+      - pattern: environment.getProperty("$VAR")
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-spring-environment-required
+    patterns:
+      - pattern: environment.getRequiredProperty("$VAR")
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Ruby - Standard
+  # ===================
+  - id: ruby-env-bracket
+    patterns:
+      - pattern: ENV["$VAR"]
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  - id: ruby-env-bracket-single
+    patterns:
+      - pattern: ENV['$VAR']
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  - id: ruby-env-fetch
+    patterns:
+      - pattern: ENV.fetch("$VAR")
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  - id: ruby-env-fetch-single
+    patterns:
+      - pattern: ENV.fetch('$VAR')
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  - id: ruby-env-fetch-default
+    patterns:
+      - pattern: ENV.fetch("$VAR", ...)
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Ruby - Rails
+  # ===================
+  - id: ruby-rails-credentials
+    patterns:
+      - pattern: Rails.application.credentials.$VAR
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  - id: ruby-rails-config
+    patterns:
+      - pattern: Rails.configuration.$VAR
+    languages: [ruby]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Rust
+  # ===================
+  - id: rust-std-env-var
+    patterns:
+      - pattern: std::env::var("$VAR")
+    languages: [rust]
+    message: "$VAR"
+    severity: INFO
+
+  - id: rust-env-var
+    patterns:
+      - pattern: env::var("$VAR")
+    languages: [rust]
+    message: "$VAR"
+    severity: INFO
+
+  - id: rust-env-macro
+    patterns:
+      - pattern: env!("$VAR")
+    languages: [rust]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # C# / .NET
+  # ===================
+  - id: csharp-environment-getvariable
+    patterns:
+      - pattern: Environment.GetEnvironmentVariable("$VAR")
+    languages: [csharp]
+    message: "$VAR"
+    severity: INFO
+
+  - id: csharp-configuration-bracket
+    patterns:
+      - pattern: configuration["$VAR"]
+    languages: [csharp]
+    message: "$VAR"
+    severity: INFO
+
+  - id: csharp-configuration-getvalue
+    patterns:
+      - pattern: configuration.GetValue<$TYPE>("$VAR")
+    languages: [csharp]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # PHP
+  # ===================
+  - id: php-getenv
+    patterns:
+      - pattern: getenv("$VAR")
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  - id: php-getenv-single
+    patterns:
+      - pattern: getenv('$VAR')
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  - id: php-env-superglobal
+    patterns:
+      - pattern: $_ENV["$VAR"]
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  - id: php-server-superglobal
+    patterns:
+      - pattern: $_SERVER["$VAR"]
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  # Laravel
+  - id: php-laravel-env
+    patterns:
+      - pattern: env("$VAR")
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  - id: php-laravel-env-default
+    patterns:
+      - pattern: env("$VAR", ...)
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  - id: php-laravel-config
+    patterns:
+      - pattern: config("$VAR")
+    languages: [php]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Kotlin
+  # ===================
+  - id: kotlin-system-getenv
+    patterns:
+      - pattern: System.getenv("$VAR")
+    languages: [kotlin]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Java/Kotlin - Quarkus
+  # ===================
+  - id: java-quarkus-configproperty
+    patterns:
+      - pattern: '@ConfigProperty(name = "$VAR")'
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-quarkus-configproperty-default
+    patterns:
+      - pattern: '@ConfigProperty(name = "$VAR", ...)'
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: kotlin-quarkus-configproperty
+    patterns:
+      - pattern: '@ConfigProperty(name = "$VAR")'
+    languages: [kotlin]
+    message: "$VAR"
+    severity: INFO
+
+  - id: kotlin-quarkus-configproperty-default
+    patterns:
+      - pattern: '@ConfigProperty(name = "$VAR", ...)'
+    languages: [kotlin]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Java - Dotenv library
+  # ===================
+  - id: java-dotenv-get
+    patterns:
+      - pattern: Dotenv.get("$VAR")
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-dotenv-get-default
+    patterns:
+      - pattern: Dotenv.get("$VAR", ...)
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-dotenv-instance-get
+    patterns:
+      - pattern: dotenv.get("$VAR")
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: java-dotenv-instance-get-default
+    patterns:
+      - pattern: dotenv.get("$VAR", ...)
+    languages: [java]
+    message: "$VAR"
+    severity: INFO
+
+  - id: kotlin-dotenv-get
+    patterns:
+      - pattern: Dotenv.get("$VAR")
+    languages: [kotlin]
+    message: "$VAR"
+    severity: INFO
+
+  - id: kotlin-dotenv-instance-get
+    patterns:
+      - pattern: dotenv.get("$VAR")
+    languages: [kotlin]
+    message: "$VAR"
+    severity: INFO
+
+  # ===================
+  # Scala
+  # ===================
+  - id: scala-sys-env
+    patterns:
+      - pattern: sys.env("$VAR")
+    languages: [scala]
+    message: "$VAR"
+    severity: INFO
+
+  - id: scala-sys-env-get
+    patterns:
+      - pattern: sys.env.get("$VAR")
+    languages: [scala]
+    message: "$VAR"
+    severity: INFO
