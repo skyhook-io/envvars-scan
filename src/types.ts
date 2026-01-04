@@ -1,9 +1,26 @@
+export type ValueSource =
+  | 'code-default'      // Default in code (||, ??, getenv default param)
+  | 'dotenv'            // .env file definition
+  | 'dockerfile-env'    // Dockerfile ENV
+  | 'dockerfile-arg'    // Dockerfile ARG
+  | 'k8s-deployment'    // K8s Deployment/StatefulSet/DaemonSet env:
+  | 'k8s-configmap'     // K8s ConfigMap
+  | 'k8s-secret'        // K8s Secret (base64 decoded)
+  | 'docker-compose'    // docker-compose.yml
+  | 'properties';       // application.properties default
+
 export interface EnvVar {
   name: string;
   file: string;
   line: number;
   language: string;
   pattern: string;
+  /** The detected value (if found) */
+  value?: string;
+  /** Where the value came from */
+  valueSource?: ValueSource;
+  /** Is this a default/fallback value? */
+  isDefault?: boolean;
 }
 
 export interface ScanResult {

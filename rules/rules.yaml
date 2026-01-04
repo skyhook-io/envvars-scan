@@ -618,3 +618,236 @@ rules:
     languages: [scala]
     message: "$VAR"
     severity: INFO
+
+  # ===================
+  # JavaScript/TypeScript - Default Value Patterns
+  # ===================
+  - id: js-process-env-or-default
+    patterns:
+      - pattern: process.env.$VAR || $DEFAULT
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: js-process-env-nullish-default
+    patterns:
+      - pattern: process.env.$VAR ?? $DEFAULT
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: js-process-env-bracket-or-default
+    patterns:
+      - pattern: process.env["$VAR"] || $DEFAULT
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: js-process-env-bracket-nullish-default
+    patterns:
+      - pattern: process.env["$VAR"] ?? $DEFAULT
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: js-nestjs-configservice-get-default
+    patterns:
+      - pattern: configService.get("$VAR", $DEFAULT)
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: js-nestjs-configservice-get-generic-default
+    patterns:
+      - pattern: configService.get<$TYPE>("$VAR", $DEFAULT)
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: js-nestjs-this-configservice-get-default
+    patterns:
+      - pattern: this.configService.get("$VAR", $DEFAULT)
+    languages: [javascript, typescript]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # Python - Default Value Patterns
+  # ===================
+  - id: python-os-getenv-default-double
+    patterns:
+      - pattern: os.getenv("$VAR", $DEFAULT)
+    languages: [python]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: python-os-getenv-default-single
+    patterns:
+      - pattern: os.getenv('$VAR', $DEFAULT)
+    languages: [python]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: python-os-environ-get-default
+    patterns:
+      - pattern: os.environ.get("$VAR", $DEFAULT)
+    languages: [python]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: python-os-environ-get-default-single
+    patterns:
+      - pattern: os.environ.get('$VAR', $DEFAULT)
+    languages: [python]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: python-django-env-with-default
+    patterns:
+      - pattern: env("$VAR", default=$DEFAULT)
+    languages: [python]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: python-django-config-with-default
+    patterns:
+      - pattern: config("$VAR", default=$DEFAULT)
+    languages: [python]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # Go - Default Value Patterns
+  # ===================
+  - id: go-getenv-or-default
+    patterns:
+      - pattern: getEnvOrDefault("$VAR", $DEFAULT)
+    languages: [go]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: go-getenv-with-default
+    patterns:
+      - pattern: getEnvWithDefault("$VAR", $DEFAULT)
+    languages: [go]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: go-lookupenv-with-fallback
+    patterns:
+      - pattern: |
+          if $VAL, $OK := os.LookupEnv("$VAR"); $OK {
+            ...
+          } else {
+            $VAL = $DEFAULT
+            ...
+          }
+    languages: [go]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # Ruby - Default Value Patterns
+  # ===================
+  - id: ruby-env-fetch-default-double
+    patterns:
+      - pattern: ENV.fetch("$VAR", $DEFAULT)
+    languages: [ruby]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: ruby-env-fetch-default-single
+    patterns:
+      - pattern: ENV.fetch('$VAR', $DEFAULT)
+    languages: [ruby]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: ruby-env-bracket-or-default
+    patterns:
+      - pattern: ENV["$VAR"] || $DEFAULT
+    languages: [ruby]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: ruby-env-bracket-single-or-default
+    patterns:
+      - pattern: ENV['$VAR'] || $DEFAULT
+    languages: [ruby]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # Java - Default Value Patterns (Spring @Value with defaults)
+  # ===================
+  - id: java-system-getenv-or-default
+    patterns:
+      - pattern: 'System.getenv("$VAR") != null ? System.getenv("$VAR") : $DEFAULT'
+    languages: [java]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: java-optional-getenv-orelse
+    patterns:
+      - pattern: 'Optional.ofNullable(System.getenv("$VAR")).orElse($DEFAULT)'
+    languages: [java]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # Rust - Default Value Patterns
+  # ===================
+  - id: rust-env-var-unwrap-or
+    patterns:
+      - pattern: std::env::var("$VAR").unwrap_or($DEFAULT)
+    languages: [rust]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: rust-env-var-unwrap-or-else
+    patterns:
+      - pattern: std::env::var("$VAR").unwrap_or_else(|_| $DEFAULT)
+    languages: [rust]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: rust-env-var-short-unwrap-or
+    patterns:
+      - pattern: env::var("$VAR").unwrap_or($DEFAULT)
+    languages: [rust]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # C# - Default Value Patterns
+  # ===================
+  - id: csharp-getenv-nullcoalesce
+    patterns:
+      - pattern: Environment.GetEnvironmentVariable("$VAR") ?? $DEFAULT
+    languages: [csharp]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: csharp-configuration-getvalue-default
+    patterns:
+      - pattern: configuration.GetValue<$TYPE>("$VAR", $DEFAULT)
+    languages: [csharp]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  # ===================
+  # PHP - Default Value Patterns
+  # ===================
+  - id: php-getenv-or-default
+    patterns:
+      - pattern: 'getenv("$VAR") ?: $DEFAULT'
+    languages: [php]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: php-getenv-nullcoalesce
+    patterns:
+      - pattern: getenv("$VAR") ?? $DEFAULT
+    languages: [php]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO

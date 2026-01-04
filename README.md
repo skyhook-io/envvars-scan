@@ -42,6 +42,15 @@ envvars-scan --all
 # Include docker-compose.yml env vars (off by default)
 envvars-scan --compose
 
+# Include Kubernetes manifests (Deployments, ConfigMaps, Secrets)
+envvars-scan --k8s
+
+# Show detected values (sensitive values are masked)
+envvars-scan --show-values
+
+# Combine flags for full visibility
+envvars-scan --k8s --show-values
+
 # Output as JSON
 envvars-scan --json
 
@@ -119,9 +128,41 @@ jobs:
 
 - **Property files**: `application.properties`, `bootstrap.properties` with `${VAR}` or `${VAR:default}` syntax (Spring, Quarkus)
 - **YAML files**: `application.yaml`, `application.yml` with `${VAR}` syntax
-- **.env files**: Variable definitions like `VAR_NAME=value`
+- **.env files**: Variable definitions like `VAR_NAME=value` (matches both `.env*` and `*.env` patterns)
 - **Dockerfiles**: `ENV` and `ARG` declarations
 - **docker-compose.yml**: Environment variable references (`${VAR}`) and definitions
+
+### Kubernetes Manifests (with `--k8s` flag)
+
+- **Deployments/StatefulSets/DaemonSets**: `env:` sections with direct values
+- **ConfigMaps**: `data:` key-value pairs
+- **Secrets**: `data:` values (base64 decoded)
+
+## Value Detection
+
+The scanner detects **values** from multiple sources:
+
+| Source | Example | `valueSource` |
+|--------|---------|---------------|
+| Code defaults | `process.env.PORT \|\| 3000` | `code-default` |
+| .env files | `DATABASE_URL=postgres://...` | `dotenv` |
+| Dockerfile ENV | `ENV NODE_ENV=production` | `dockerfile-env` |
+| Dockerfile ARG | `ARG VERSION=1.0.0` | `dockerfile-arg` |
+| K8s Deployments | `env: [{name: X, value: Y}]` | `k8s-deployment` |
+| K8s ConfigMaps | `data: {KEY: value}` | `k8s-configmap` |
+| K8s Secrets | `data: {KEY: base64}` | `k8s-secret` |
+| Spring properties | `${VAR:default}` | `properties` |
+
+### Security
+
+When using `--show-values`, sensitive values are automatically masked for variable names matching:
+`secret`, `password`, `key`, `token`, `api`, `auth`, `credential`, `private`
+
+Example output:
+```
+DATABASE_URL = postgres://localhost:5432/dev (dotenv)
+API_KEY = sk****89 (dotenv)  # masked
+```
 
 ## Custom Patterns
 
@@ -143,7 +184,15 @@ includeExcludePatterns:
 ## Programmatic Usage
 
 ```typescript
-import { scan, scanPropertyFiles, uniqueEnvVarNames } from '@skyhook-io/envvars-scan';
+import {
+  scan,
+  scanPropertyFiles,
+  scanK8sManifests,
+  uniqueEnvVarNames,
+  groupByName,
+  type EnvVar,
+  type ValueSource
+} from '@skyhook-io/envvars-scan';
 
 // Full scan (semgrep + property files)
 const result = await scan('./my-project', {
@@ -152,8 +201,31 @@ const result = await scan('./my-project', {
 
 console.log(uniqueEnvVarNames(result));
 
+// Access values
+for (const envVar of result.envVars) {
+  console.log(envVar.name, envVar.value, envVar.valueSource);
+}
+
 // Property files only
 const propertyVars = await scanPropertyFiles('./my-project');
+
+// Kubernetes manifests
+const k8sVars = await scanK8sManifests('./my-project');
+```
+
+### EnvVar Type
+
+```typescript
+interface EnvVar {
+  name: string;
+  file: string;
+  line: number;
+  language: string;
+  pattern: string;
+  value?: string;           // Detected value (if found)
+  valueSource?: ValueSource; // Where the value came from
+  isDefault?: boolean;       // Is this a default/fallback value?
+}
 ```
 
 ## Default Excludes

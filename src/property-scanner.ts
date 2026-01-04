@@ -1,8 +1,31 @@
 import { readFileSync } from 'fs';
 import { glob } from 'glob';
 import { join, relative } from 'path';
-import type { EnvVar } from './types.js';
+import type { EnvVar, ValueSource } from './types.js';
 import { DEFAULT_EXCLUDE_PATTERNS } from './scanner.js';
+
+/**
+ * Parse a value from .env file format, handling quotes and escape sequences
+ */
+function parseEnvValue(rawValue: string): string {
+  let value = rawValue.trim();
+
+  // Handle quoted values
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1);
+  }
+
+  // Handle inline comments (only for unquoted values)
+  if (!rawValue.startsWith('"') && !rawValue.startsWith("'")) {
+    const commentIdx = value.indexOf('#');
+    if (commentIdx > 0) {
+      value = value.slice(0, commentIdx).trim();
+    }
+  }
+
+  return value;
+}
 
 /**
  * Scans property/config files for ${VAR} and ${VAR:default} syntax
@@ -50,8 +73,8 @@ function scanPropertyFile(filePath: string, basePath: string): EnvVar[] {
   const lines = content.split('\n');
 
   // Pattern: ${VAR_NAME} or ${VAR_NAME:default}
-  // Also handles nested like ${VAR1:${VAR2:default}}
-  const envVarPattern = /\$\{([A-Z][A-Z0-9_]*)(?::[^}]*)?\}/g;
+  // Captures: group 1 = var name, group 2 = default value (optional)
+  const envVarPattern = /\$\{([A-Z][A-Z0-9_]*)(?::([^}]*))?\}/g;
 
   const relativePath = relative(basePath, filePath);
 
@@ -61,6 +84,7 @@ function scanPropertyFile(filePath: string, basePath: string): EnvVar[] {
 
     while ((match = envVarPattern.exec(line)) !== null) {
       const varName = match[1];
+      const defaultValue = match[2]; // May be undefined
 
       envVars.push({
         name: varName,
@@ -68,6 +92,9 @@ function scanPropertyFile(filePath: string, basePath: string): EnvVar[] {
         line: i + 1,
         language: 'properties',
         pattern: 'spring.placeholder',
+        value: defaultValue,
+        valueSource: defaultValue ? 'properties' : undefined,
+        isDefault: !!defaultValue,
       });
     }
   }
@@ -107,36 +134,60 @@ function scanDockerfile(filePath: string, basePath: string): EnvVar[] {
   const lines = content.split('\n');
 
   // Pattern: ENV VAR_NAME=value or ENV VAR_NAME value
-  const envPattern = /^ENV\s+([A-Z][A-Z0-9_]*)/i;
+  // Captures: group 1 = var name, group 2 = value (with = or space separator)
+  const envPatternEquals = /^ENV\s+([A-Z][A-Z0-9_]*)=(.*)$/i;
+  const envPatternSpace = /^ENV\s+([A-Z][A-Z0-9_]*)\s+(.+)$/i;
   // Pattern: ARG VAR_NAME or ARG VAR_NAME=default
-  const argPattern = /^ARG\s+([A-Z][A-Z0-9_]*)/i;
-  // Pattern: ${VAR_NAME} usage
-  const usagePattern = /\$\{?([A-Z][A-Z0-9_]*)\}?/g;
+  const argPattern = /^ARG\s+([A-Z][A-Z0-9_]*)(?:=(.*))?$/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
-    // Check ENV declarations
-    const envMatch = envPattern.exec(line);
+    // Check ENV declarations (= syntax)
+    let envMatch = envPatternEquals.exec(line);
     if (envMatch) {
+      const value = envMatch[2]?.trim();
       envVars.push({
         name: envMatch[1],
         file: filePath,
         line: i + 1,
         language: 'dockerfile',
         pattern: 'ENV',
+        value: value || undefined,
+        valueSource: value ? 'dockerfile-env' : undefined,
       });
+      continue;
+    }
+
+    // Check ENV declarations (space syntax)
+    envMatch = envPatternSpace.exec(line);
+    if (envMatch) {
+      const value = envMatch[2]?.trim();
+      envVars.push({
+        name: envMatch[1],
+        file: filePath,
+        line: i + 1,
+        language: 'dockerfile',
+        pattern: 'ENV',
+        value: value || undefined,
+        valueSource: value ? 'dockerfile-env' : undefined,
+      });
+      continue;
     }
 
     // Check ARG declarations
     const argMatch = argPattern.exec(line);
     if (argMatch) {
+      const value = argMatch[2]?.trim();
       envVars.push({
         name: argMatch[1],
         file: filePath,
         line: i + 1,
         language: 'dockerfile',
         pattern: 'ARG',
+        value: value || undefined,
+        valueSource: value ? 'dockerfile-arg' : undefined,
+        isDefault: !!value,
       });
     }
   }
@@ -155,7 +206,8 @@ export async function scanDotEnvFiles(
 
   const ignorePatterns = excludePatterns.map((p) => `**/${p}/**`);
 
-  const files = await glob('**/.env*', {
+  // Match both .env* files (like .env, .env.local) and *.env files (like container.env)
+  const files = await glob(['**/.env*', '**/*.env'], {
     cwd: basePath,
     ignore: ignorePatterns,
     nodir: true,
@@ -177,7 +229,8 @@ function scanDotEnvFile(filePath: string, basePath: string): EnvVar[] {
   const lines = content.split('\n');
 
   // Pattern: VAR_NAME=value (with optional export prefix)
-  const envPattern = /^(?:export\s+)?([A-Z][A-Z0-9_]*)=/;
+  // Captures: group 1 = var name, group 2 = value
+  const envPattern = /^(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)$/;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -187,12 +240,17 @@ function scanDotEnvFile(filePath: string, basePath: string): EnvVar[] {
 
     const match = envPattern.exec(line);
     if (match) {
+      const rawValue = match[2];
+      const value = parseEnvValue(rawValue);
+
       envVars.push({
         name: match[1],
         file: filePath,
         line: i + 1,
         language: 'dotenv',
         pattern: 'definition',
+        value: value || undefined,
+        valueSource: 'dotenv',
       });
     }
   }
@@ -231,15 +289,39 @@ function scanDockerComposeFile(filePath: string, basePath: string): EnvVar[] {
   const content = readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
 
-  // Pattern: ${VAR_NAME} or $VAR_NAME in values
+  // Pattern: ${VAR_NAME} or $VAR_NAME in values (references only, no value extraction)
   const varRefPattern = /\$\{?([A-Z][A-Z0-9_]*)\}?/g;
-  // Pattern: - VAR_NAME=value or VAR_NAME: value (env definitions)
-  const envDefPattern = /^\s*-?\s*([A-Z][A-Z0-9_]*)[=:]/;
+  // Pattern: - VAR_NAME=value or VAR_NAME: value (env definitions with values)
+  // Captures: group 1 = var name, group 2 = separator (= or :), group 3 = value
+  const envDefPattern = /^\s*-?\s*([A-Z][A-Z0-9_]*)([=:])(.*)$/;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Check for ${VAR} references
+    // Check for VAR_NAME= or VAR_NAME: definitions (with values)
+    const defMatch = envDefPattern.exec(line);
+    if (defMatch) {
+      let value = defMatch[3]?.trim();
+
+      // Remove quotes if present
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+
+      envVars.push({
+        name: defMatch[1],
+        file: filePath,
+        line: i + 1,
+        language: 'docker-compose',
+        pattern: 'environment-definition',
+        value: value || undefined,
+        valueSource: value ? 'docker-compose' : undefined,
+      });
+      continue; // Don't double-count as reference
+    }
+
+    // Check for ${VAR} references (no value extraction for references)
     let match;
     while ((match = varRefPattern.exec(line)) !== null) {
       envVars.push({
@@ -248,18 +330,6 @@ function scanDockerComposeFile(filePath: string, basePath: string): EnvVar[] {
         line: i + 1,
         language: 'docker-compose',
         pattern: 'variable-reference',
-      });
-    }
-
-    // Check for VAR_NAME= or VAR_NAME: definitions
-    const defMatch = envDefPattern.exec(line);
-    if (defMatch) {
-      envVars.push({
-        name: defMatch[1],
-        file: filePath,
-        line: i + 1,
-        language: 'docker-compose',
-        pattern: 'environment-definition',
       });
     }
   }

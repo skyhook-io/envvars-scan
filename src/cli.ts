@@ -7,7 +7,48 @@ import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 import { scan, checkSemgrepInstalled, uniqueEnvVarNames, groupByName, CONFIG_FILE_NAME, DEFAULT_EXCLUDE_PATTERNS } from './scanner.js';
 import { scanPropertyFiles, scanDockerfiles, scanDotEnvFiles, scanDockerComposeFiles } from './property-scanner.js';
+import { scanK8sManifests } from './k8s-scanner.js';
 import type { EnvVar, ScanResult } from './types.js';
+
+/**
+ * Patterns that indicate a sensitive variable (values should be masked)
+ */
+const SENSITIVE_PATTERNS = [
+  /secret/i,
+  /password/i,
+  /passwd/i,
+  /\bkey\b/i,
+  /token/i,
+  /\bapi\b/i,
+  /auth/i,
+  /credential/i,
+  /private/i,
+];
+
+/**
+ * Check if a variable name suggests it contains sensitive data
+ */
+function isSensitiveVar(varName: string): boolean {
+  return SENSITIVE_PATTERNS.some(p => p.test(varName));
+}
+
+/**
+ * Mask a value for display (show first/last 2 chars if long enough)
+ */
+function maskValue(value: string): string {
+  if (!value) return '****';
+  if (value.length <= 4) return '****';
+  if (value.length <= 8) return value.slice(0, 1) + '****' + value.slice(-1);
+  return value.slice(0, 2) + '****' + value.slice(-2);
+}
+
+/**
+ * Get display value, masking if sensitive
+ */
+function getDisplayValue(varName: string, value: string | undefined, showValues: boolean): string | undefined {
+  if (!value || !showValues) return undefined;
+  return isSensitiveVar(varName) ? maskValue(value) : value;
+}
 
 const REPO_CACHE_DIR = '/tmp/envvars-scan-repos';
 
@@ -49,6 +90,8 @@ program
   .option('--no-dotenv', 'Skip .env file scan')
   .option('--no-docker', 'Skip Dockerfile scan')
   .option('--compose', 'Include docker-compose.yml env vars (off by default)')
+  .option('--k8s', 'Include Kubernetes manifests (Deployments, ConfigMaps, Secrets)')
+  .option('--show-values', 'Show env var values (sensitive values are masked)')
   .option('-r, --repo <url>', 'Clone and scan a remote GitHub repo (org/repo or full URL)')
   .option('--keep', 'Keep cloned repo after scanning (default: clean up)')
   .option('--branch <branch>', 'Branch to clone (default: default branch)')
@@ -96,6 +139,8 @@ interface Options {
   dotenv?: boolean;
   docker?: boolean;
   compose?: boolean;
+  k8s?: boolean;
+  showValues?: boolean;
   repo?: string;
   keep?: boolean;
   branch?: string;
@@ -198,6 +243,15 @@ async function run(path: string, options: Options): Promise<void> {
     allEnvVars.push(...composeFiltered);
   }
 
+  // Scan Kubernetes manifests (opt-in)
+  if (options.k8s) {
+    const k8sVars = await scanK8sManifests(absPath, DEFAULT_EXCLUDE_PATTERNS);
+    const k8sFiltered = options.all
+      ? k8sVars
+      : k8sVars.filter((v) => /^[A-Z][A-Z0-9_]*$/.test(v.name));
+    allEnvVars.push(...k8sFiltered);
+  }
+
   // Deduplicate
   const result = deduplicateResults({
     path: absPath,
@@ -241,13 +295,37 @@ async function run(path: string, options: Options): Promise<void> {
   for (const name of names) {
     const locations = groups.get(name) || [];
     process.stdout.write(chalk.green(`  ${name}`));
+
+    // Show value if --show-values flag is set and a value exists
+    const firstWithValue = locations.find(l => l.value);
+    if (options.showValues && firstWithValue?.value) {
+      const displayValue = getDisplayValue(name, firstWithValue.value, true);
+      if (displayValue) {
+        process.stdout.write(chalk.yellow(` = ${displayValue}`));
+        if (firstWithValue.valueSource) {
+          process.stdout.write(chalk.gray(` (${firstWithValue.valueSource})`));
+        }
+      }
+    }
+
     console.log(chalk.gray(` (${locations.length} usage${locations.length === 1 ? '' : 's'})`));
 
     // Show first few locations
     const maxLocations = 3;
     for (let i = 0; i < locations.length && i < maxLocations; i++) {
       const loc = locations[i];
-      console.log(chalk.gray(`      ${loc.file}:${loc.line}`));
+      let locStr = `      ${loc.file}:${loc.line}`;
+      // Show value per-location if different from first value shown
+      if (options.showValues && loc.value && loc !== firstWithValue) {
+        const locDisplayValue = getDisplayValue(name, loc.value, true);
+        if (locDisplayValue) {
+          locStr += chalk.yellow(` = ${locDisplayValue}`);
+          if (loc.valueSource) {
+            locStr += chalk.gray(` (${loc.valueSource})`);
+          }
+        }
+      }
+      console.log(chalk.gray(locStr));
     }
     if (locations.length > maxLocations) {
       console.log(chalk.gray(`      ... and ${locations.length - maxLocations} more`));
@@ -565,6 +643,12 @@ async function scanPath(absPath: string, options: Options): Promise<ScanResult> 
   if (options.compose) {
     const composeVars = await scanDockerComposeFiles(absPath, DEFAULT_EXCLUDE_PATTERNS);
     const filtered = options.all ? composeVars : composeVars.filter((v) => /^[A-Z][A-Z0-9_]*$/.test(v.name));
+    allEnvVars.push(...filtered);
+  }
+
+  if (options.k8s) {
+    const k8sVars = await scanK8sManifests(absPath, DEFAULT_EXCLUDE_PATTERNS);
+    const filtered = options.all ? k8sVars : k8sVars.filter((v) => /^[A-Z][A-Z0-9_]*$/.test(v.name));
     allEnvVars.push(...filtered);
   }
 

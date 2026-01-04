@@ -3,7 +3,36 @@ import { existsSync, mkdtempSync, writeFileSync, readFileSync, rmSync } from 'fs
 import { tmpdir } from 'os';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import type { EnvVar, ScanOptions, ScanResult, SemgrepOutput, UserConfig } from './types.js';
+import type { EnvVar, ScanOptions, ScanResult, SemgrepOutput, UserConfig, ValueSource } from './types.js';
+
+/**
+ * Clean up a default value captured from Semgrep
+ * Removes surrounding quotes and handles common patterns
+ */
+function cleanDefaultValue(value: string): string {
+  let cleaned = value.trim();
+
+  // Remove surrounding quotes (single or double)
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+      (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1);
+  }
+
+  // Handle backtick strings (JS template literals)
+  if (cleaned.startsWith('`') && cleaned.endsWith('`')) {
+    cleaned = cleaned.slice(1, -1);
+  }
+
+  // Remove String() wrapper if present
+  if (cleaned.startsWith('String(') && cleaned.endsWith(')')) {
+    cleaned = cleaned.slice(7, -1);
+  }
+
+  // Handle .to_string() or .to_owned() (Rust)
+  cleaned = cleaned.replace(/\.(to_string|to_owned)\(\)$/, '');
+
+  return cleaned;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -100,31 +129,58 @@ export async function scan(path: string, options: ScanOptions = {}): Promise<Sca
       errors: [],
     };
 
-    const seen = new Set<string>();
+    // Use a map to track results by key, preferring results with default values
+    const resultMap = new Map<string, { envVar: EnvVar; hasDefault: boolean }>();
     const uppercaseRe = /^[A-Z][A-Z0-9_]*$/;
 
     for (const r of output.results) {
-      const envVarName = r.extra.message;
+      const message = r.extra.message;
+
+      // Check for default value separator (|||)
+      let envVarName: string;
+      let defaultValue: string | undefined;
+
+      if (message.includes('|||')) {
+        const parts = message.split('|||');
+        envVarName = parts[0];
+        defaultValue = cleanDefaultValue(parts[1]);
+      } else {
+        envVarName = message;
+      }
 
       // Filter to uppercase only if enabled
       if (filterUppercase && !uppercaseRe.test(envVarName)) {
         continue;
       }
 
-      // Dedupe
-      const key = `${envVarName}:${r.path}:${r.start.line}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
       const { language, pattern } = parseCheckId(r.check_id);
 
-      result.envVars.push({
+      const envVar: EnvVar = {
         name: envVarName,
         file: r.path,
         line: r.start.line,
         language,
         pattern,
-      });
+        value: defaultValue,
+        valueSource: defaultValue ? 'code-default' : undefined,
+        isDefault: !!defaultValue,
+      };
+
+      // Dedupe by key, but prefer results with default values
+      const key = `${envVarName}:${r.path}:${r.start.line}`;
+      const existing = resultMap.get(key);
+
+      if (!existing) {
+        resultMap.set(key, { envVar, hasDefault: !!defaultValue });
+      } else if (defaultValue && !existing.hasDefault) {
+        // Replace with version that has a default value
+        resultMap.set(key, { envVar, hasDefault: true });
+      }
+    }
+
+    // Add all deduped results
+    for (const { envVar } of resultMap.values()) {
+      result.envVars.push(envVar);
     }
 
     // Collect errors
