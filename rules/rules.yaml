@@ -733,6 +733,58 @@ rules:
     message: "$VAR|||$DEFAULT"
     severity: INFO
 
+  # Go - Common typed helper patterns (getEnvStr, getEnvInt, etc.)
+  - id: go-getenv-typed-helpers
+    patterns:
+      - pattern-either:
+          - pattern: getEnvStr("$VAR", $DEFAULT)
+          - pattern: getEnvInt("$VAR", $DEFAULT)
+          - pattern: getEnvBool("$VAR", $DEFAULT)
+          - pattern: getEnvFloat("$VAR", $DEFAULT)
+          - pattern: getEnvFloat64("$VAR", $DEFAULT)
+          - pattern: getEnvDuration("$VAR", $DEFAULT)
+          - pattern: GetEnvStr("$VAR", $DEFAULT)
+          - pattern: GetEnvInt("$VAR", $DEFAULT)
+          - pattern: GetEnvBool("$VAR", $DEFAULT)
+          - pattern: GetEnvFloat("$VAR", $DEFAULT)
+          - pattern: GetEnvFloat64("$VAR", $DEFAULT)
+          - pattern: GetEnvDuration("$VAR", $DEFAULT)
+    languages: [go]
+    message: "$VAR|||$DEFAULT"
+    severity: INFO
+
+  - id: go-getenv-typed-helpers-no-default
+    patterns:
+      - pattern-either:
+          - pattern: getEnvStr("$VAR")
+          - pattern: getEnvInt("$VAR")
+          - pattern: getEnvBool("$VAR")
+          - pattern: getEnvFloat("$VAR")
+          - pattern: getEnvFloat64("$VAR")
+          - pattern: getEnvDuration("$VAR")
+          - pattern: GetEnvStr("$VAR")
+          - pattern: GetEnvInt("$VAR")
+          - pattern: GetEnvBool("$VAR")
+          - pattern: GetEnvFloat("$VAR")
+          - pattern: GetEnvFloat64("$VAR")
+          - pattern: GetEnvDuration("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
+  # Go - mustGetEnv / requireEnv patterns
+  - id: go-must-getenv
+    patterns:
+      - pattern-either:
+          - pattern: mustGetEnv("$VAR")
+          - pattern: requireEnv("$VAR")
+          - pattern: mustGetenv("$VAR")
+          - pattern: MustGetEnv("$VAR")
+          - pattern: RequireEnv("$VAR")
+    languages: [go]
+    message: "$VAR"
+    severity: INFO
+
   - id: go-lookupenv-with-fallback
     patterns:
       - pattern: |
